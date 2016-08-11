@@ -5,11 +5,11 @@ challongeranking is a Python-module for ranking players in tournaments hosted in
 Players are identified by an email hash provided by the Challonge API. This means that in order for a match to be
 ranked, **both players must have been registered to the processed tournament(s) with their Challonge-accounts**. 
 
-## Requirements
-challongeranking uses [pychallonge](https://github.com/russ-/pychallonge) to interact with the Challonge API,
-so be sure to install that first. See the installation instructions in pychallonge's github page.
+## Installing
+Just use `pip install challongeranking`. This will install everything needed.
 
 ## Usage
+To import, use `from challongeranking import challongeranking`.
 Please see the examples directory for example code.
 
 ## Using the stored data
