@@ -76,8 +76,8 @@ def __process_match(match, db):
     else:
         winner = 1
 
-    p1_rating = __get_rating(player1, db)
-    p2_rating = __get_rating(player2, db)
+    p1_rating = __player_rating(player1, db)
+    p2_rating = __player_rating(player2, db)
 
     p1_new_rating, p2_new_rating = __update_ratings((p1_rating, p2_rating),
                                                     winner)
@@ -90,7 +90,7 @@ def __process_match(match, db):
     __rating_cache[player2['id']] = p2_new_rating
 
 
-def __get_rating(player, db):
+def __player_rating(player, db):
     key = player['id']
     if key not in __rating_cache:
         c = db.cursor()
@@ -116,7 +116,7 @@ def __find_tournament(tournament_id, db):
     return c.fetchone() is not None
 
 
-def __update_ratings(ratings, winner):
+def __update_ratings(old_ratings, winner):
     """Calculate new ratings for players.
 
     Args: ratings - tuple of current player ratings before match
@@ -125,7 +125,7 @@ def __update_ratings(ratings, winner):
 
     Returns a tuple containing new ratings.
     """
-    r1, r2 = ratings
+    r1, r2 = old_ratings
     R1 = 10 ** (r1 / 400)
     R2 = 10 ** (r2 / 400)
     E1 = R1 / float(R1 + R2)
