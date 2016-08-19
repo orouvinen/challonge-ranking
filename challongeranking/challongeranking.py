@@ -46,6 +46,7 @@ def processTournament(tournamentName, dbName):
     for player in players:
         __player_cache[player['id']] = player
         __update_player_name(db, player)
+        __add_participation(db, tournament, player)
 
     for match in challonge.matches.index(tournament['id']):
         __process_match(match, db)
@@ -53,6 +54,13 @@ def processTournament(tournamentName, dbName):
     __add_tournament(tournament['id'], db)
     db.commit()
     db.close()
+
+
+def __add_participation(db, tournament, player):
+    if player['email-hash'] is not None:
+        c = db.cursor()
+        c.execute('INSERT INTO participations VALUES (?,?)',
+                  (tournament['id'], player['email-hash']))
 
 
 def __process_match(match, db):
@@ -163,15 +171,32 @@ def __update_player_name(db, player):
                           (player_tournament_name, id))
 
 
+def __player_tournament_count(db, player):
+    c = db.cursor()
+    id = player['email-hash']
+
+    c.execute('SELECT tournament_id FROM participations WHERE player_id=?',
+              (id,))
+    tournament_count = len(c.fetchall())
+    return tournament_count
+
+
 def __createDatabase(dbName):
     newdb = sqlite3.connect(dbName)
     c = newdb.cursor()
 
     queries = [
         "CREATE TABLE players(id TEXT PRIMARY KEY, nick TEXT, rating INT)",
+
         "CREATE TABLE aliases(alias TEXT, player_id TEXT,"
-        "FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE)",
-        "CREATE TABLE tournaments(id INT PRIMARY KEY)"
+        " FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE)",
+
+        "CREATE TABLE tournaments(id INT PRIMARY KEY)",
+
+        "CREATE TABLE participations(player_id INT, tournament_id INT,"
+        " FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE,"
+        " FOREIGN KEY(tournament_id) REFERENCES tournaments(id)"
+        " ON DELETE CASCADE)"
     ]
     for query in queries:
         c.execute(query)
