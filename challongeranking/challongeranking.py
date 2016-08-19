@@ -171,16 +171,6 @@ def __update_player_name(db, player):
                           (player_tournament_name, id))
 
 
-def __player_tournament_count(db, player):
-    c = db.cursor()
-    id = player['email-hash']
-
-    c.execute('SELECT tournament_id FROM participations WHERE player_id=?',
-              (id,))
-    tournament_count = len(c.fetchall())
-    return tournament_count
-
-
 def __createDatabase(dbName):
     newdb = sqlite3.connect(dbName)
     c = newdb.cursor()
