@@ -38,6 +38,7 @@ def processTournament(tournamentName, dbName):
     else:
         db = sqlite3.connect(dbName)
 
+    # Do not process tournaments that have already been processed
     tournament = challonge.tournaments.show(tournamentName)
     if __find_tournament(tournament['id'], db) == True:
         return
@@ -91,6 +92,11 @@ def __process_match(match, db):
 
 
 def __player_rating(player, db):
+    """Returns the rating of a player.
+    Arguments:
+        player = the player as returned by the challonge API
+        db = previously opened database connection
+    """
     key = player['id']
     if key not in __rating_cache:
         c = db.cursor()
@@ -146,6 +152,12 @@ def __update_ratings(old_ratings, winner):
 
 
 def __update_player_name(db, player):
+    """Keeps list of names (aliases) used by a player up to date.
+
+    Arguments:
+        db - previously opened database connection
+        player - the player as returned by challonge API
+    """
     c = db.cursor()
     id = player['email-hash']
 
@@ -172,6 +184,10 @@ def __update_player_name(db, player):
 
 
 def __createDatabase(dbName):
+    """Sets up a fresh sqlite3 database with the filename dbName.
+    Returns a connection to the created database.
+    """
+
     newdb = sqlite3.connect(dbName)
     c = newdb.cursor()
 
