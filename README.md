@@ -21,8 +21,8 @@ challongeranking stores ratings in a **sqlite3 database**.
 
 As of now, the database is very simple.
 
-The columns of each table should be pretty self-explanatory, but here's quick run-down of the tables
-that are most likely to be used.
+The columns of each table should be pretty self-explanatory, but here's quick run-down of the tables.
+
 
 #### Table PLAYERS
 | Column | Description | 
@@ -38,3 +38,22 @@ The table provides mapping from player's possible aliases to the player.
 | ------ |:-----------:|
 | alias  | alias nick  |
 | player_id | References player id in `players` who used this alias |
+
+#### Table TOURNAMENTS
+Contains record of all the tournaments that have been processed so far.
+
+| Column | 
+| ------ |
+| id |
+
+#### Table PARTICIPATIONS
+Keeps track of player participation in tournaments. Each row tells a
+player_id who participated in a tournament with tournament_id.
+I.e. for all tournaments, contains a player_id of each player who took part in
+the tournament.
+
+| Column | Description |
+| ------ |:-----------:|
+| player_id | foreign key (players.id) |
+| tournament_id | foreign key (tournaments.id) |
+
