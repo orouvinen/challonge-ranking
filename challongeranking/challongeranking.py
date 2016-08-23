@@ -28,7 +28,6 @@ def processTournament(tournamentName, dbName):
             database filename.
             If the file doesn't exist, it will be created.
     """
-
     global __player_cache, __rating_cache
     __player_cache = dict()
     __rating_cache = dict()
@@ -43,7 +42,8 @@ def processTournament(tournamentName, dbName):
     if __find_tournament(tournament['id'], db) == True:
         return
 
-    players = challonge.participants.index(tournament['id'])
+    players = filter(lambda player: player['email-hash'] is not None,
+                     challonge.participants.index(tournament['id']))
     for player in players:
         __player_cache[player['id']] = player
         __update_player_name(db, player)
@@ -58,19 +58,20 @@ def processTournament(tournamentName, dbName):
 
 
 def __add_participation(db, tournament, player):
-    if player['email-hash'] is not None:
-        c = db.cursor()
-        c.execute('INSERT INTO participations VALUES (?,?)',
-                  (tournament['id'], player['email-hash']))
+    c = db.cursor()
+    c.execute('INSERT INTO participations VALUES (?,?)',
+              (tournament['id'], player['email-hash']))
 
 
 def __process_match(match, db):
     c = db.cursor()
+
+    if (match['player1-id'] not in __player_cache or
+       match['player2-id'] not in __player_cache):
+        return
+
     player1 = __player_cache[match['player1-id']]
     player2 = __player_cache[match['player2-id']]
-
-    if player1['email-hash'] is None or player2['email-hash'] is None:
-        return
 
     if match['winner-id'] == player1['id']:
         winner = 0
