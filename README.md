@@ -59,6 +59,7 @@ the tournament.
 Match and Elo history for players.
 
 | Column | Description | Notes |
+| ------ |:-----------:| ----- |
 | id     | match unique id | Formed by prefixing tournament ID with match ID |
 | tournament_id | foreign key (tournaments.id) |
 | player1_id | foreign key (players.id) |
