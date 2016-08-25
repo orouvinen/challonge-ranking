@@ -81,7 +81,7 @@ def __add_match(db, match, old_ratings, new_ratings):
     winner = __player_cache[match['winner-id']]
 
     c.execute('INSERT INTO matches VALUES(?,?,?,?,?,?,?,?,?)',
-              (match['id'], match['tournament-id'],
+              (match['tournament-id'] + match['id'], match['tournament-id'],
                player1['email-hash'], player2['email-hash'],
                winner['email-hash'],
                old_ratings[0], old_ratings[1],
