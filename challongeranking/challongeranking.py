@@ -63,6 +63,31 @@ def __add_participation(db, tournament, player):
               (tournament['id'], player['email-hash']))
 
 
+def __add_match(db, match, old_ratings, new_ratings):
+    """Inserts a match record into the database.
+    Arguments:
+        db: previously opened database connection
+        match: match object as fetched from the challonge API
+        old_ratings: Elo ratings for players before playing the match,
+                     as a tuple
+        new_ratings: Elo ratings for players after playing the match
+    """
+    c = db.cursor()
+    pl1_elo_change = new_ratings[0] - old_ratings[0]
+    pl2_elo_change = new_ratings[1] - old_ratings[1]
+
+    player1 = __player_cache[match['player1-id']]
+    player2 = __player_cache[match['player2-id']]
+    winner = __player_cache[match['winner-id']]
+
+    c.execute('INSERT INTO matches VALUES(?,?,?,?,?,?,?,?,?)',
+              (match['id'], match['tournament-id'],
+               player1['email-hash'], player2['email-hash'],
+               winner['email-hash'],
+               old_ratings[0], old_ratings[1],
+               pl1_elo_change, pl2_elo_change))
+
+
 def __process_match(match, db):
     c = db.cursor()
 
@@ -90,6 +115,9 @@ def __process_match(match, db):
 
     __rating_cache[player1['id']] = p1_new_rating
     __rating_cache[player2['id']] = p2_new_rating
+
+    __add_match(db, match, (p1_rating, p2_rating),
+                           (p1_new_rating, p2_new_rating))
 
 
 def __player_rating(player, db):
@@ -203,7 +231,18 @@ def __createDatabase(dbName):
         "CREATE TABLE participations(player_id INT, tournament_id INT,"
         " FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE,"
         " FOREIGN KEY(tournament_id) REFERENCES tournaments(id)"
-        " ON DELETE CASCADE)"
+        " ON DELETE CASCADE)",
+
+        "CREATE TABLE matches"
+        "(id INT PRIMARY KEY, tournament_id INT,"
+        " player1_id TEXT, player2_id TEXT, winner_id TEXT,"
+        " player1_elo INT, player2_elo INT,"
+        " player1_elo_change INT, player2_elo_change INT,"
+        " FOREIGN KEY(tournament_id) REFERENCES tournaments(id)"
+        "  ON DELETE CASCADE,"
+        " FOREIGN KEY(player1_id) REFERENCES players(id),"
+        " FOREIGN KEY(player2_id) REFERENCES players(id))"
+
     ]
     for query in queries:
         c.execute(query)
