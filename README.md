@@ -19,8 +19,6 @@ Please see the examples directory for example code.
 ## Using the stored data
 challongeranking stores ratings in a **sqlite3 database**.
 
-As of now, the database is very simple.
-
 The columns of each table should be pretty self-explanatory, but here's quick run-down of the tables.
 
 
@@ -57,3 +55,16 @@ the tournament.
 | player_id | foreign key (players.id) |
 | tournament_id | foreign key (tournaments.id) |
 
+#### Table MATCHES
+Match and Elo history for players.
+
+| Column | Description | Notes |
+| id     | match unique id | Formed by prefixing tournament ID with match ID |
+| tournament_id | foreign key (tournaments.id) |
+| player1_id | foreign key (players.id) |
+| player2_id | foreign key (players.id) |
+| winner_id  | Winner of the match, foreign key (players.id) |
+| player1_elo | Player 1 Elo rating before the match was played |
+| player2_elo | Player 2 Elo rating before the match was played |
+| player1_elo_change | Match Elo change for player 1 |
+| player2_elo_change | Match Elo change for player 2 |
