@@ -161,10 +161,10 @@ def __update_ratings(old_ratings, winner):
     Returns a tuple containing new ratings.
     """
     r1, r2 = old_ratings
-    R1 = 10 ** (r1 / 400)
-    R2 = 10 ** (r2 / 400)
-    E1 = R1 / float(R1 + R2)
-    E2 = R2 / float(R1 + R2)
+    R1 = 10 ** (float(r1) / 400)
+    R2 = 10 ** (float(r2) / 400)
+    E1 = R1 / (R1 + R2)
+    E2 = R2 / (R1 + R2)
 
     S1 = 0
     S2 = 0
