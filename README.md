@@ -18,4 +18,4 @@ Please see the examples directory for example code.
 
 ## Using the stored data
 challongeranking stores ratings in a **sqlite3 database**.
-Please see (README-database)[README-database.md] for details.
+Please see [README-database](README-database.md) for details.
