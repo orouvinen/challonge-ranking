@@ -42,6 +42,10 @@ def processTournament(tournamentName, dbName):
     if __find_tournament(tournament['id'], db) == True:
         return
 
+    # Do not process tournaments that have not been completed yet
+    if tournament['completed-at'] == None:
+        return
+
     players = filter(lambda player: player['email-hash'] is not None,
                      challonge.participants.index(tournament['id']))
     for player in players:
