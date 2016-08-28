@@ -67,6 +67,22 @@ def __add_participation(db, tournament, player):
               (tournament['id'], player['email-hash']))
 
 
+def __uniqueMatchId(match):
+    """ Generate an unique id for a match.
+    Arguments:
+        match: match object as fetched from challonge API
+
+        Returns ID as an integer
+    """
+    # tournamentId = match['tournament-id']
+    # matchId = match['id']
+    # return int(str(tournamentId) + str(matchId))
+    k1 = match['tournament-id']
+    k2 = match['id']
+    id = ((k1 + k2) * (k1 + k2 + 1)) / 2 + k2
+    return id
+
+
 def __add_match(db, match, old_ratings, new_ratings):
     """Inserts a match record into the database.
     Arguments:
@@ -85,7 +101,7 @@ def __add_match(db, match, old_ratings, new_ratings):
     winner = __player_cache[match['winner-id']]
 
     c.execute('INSERT INTO matches VALUES(?,?,?,?,?,?,?,?,?)',
-              (match['tournament-id'] + match['id'], match['tournament-id'],
+              (__uniqueMatchId(match), match['tournament-id'],
                player1['email-hash'], player2['email-hash'],
                winner['email-hash'],
                old_ratings[0], old_ratings[1],
