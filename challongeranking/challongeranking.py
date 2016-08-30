@@ -74,9 +74,6 @@ def __uniqueMatchId(match):
 
         Returns ID as an integer
     """
-    # tournamentId = match['tournament-id']
-    # matchId = match['id']
-    # return int(str(tournamentId) + str(matchId))
     k1 = match['tournament-id']
     k2 = match['id']
     id = ((k1 + k2) * (k1 + k2 + 1)) / 2 + k2
