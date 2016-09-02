@@ -97,8 +97,9 @@ def __addMatch(db, match, oldRatings, newRatings):
     player2 = __playerCache[match['player2-id']]
     winner = __playerCache[match['winner-id']]
 
-    c.execute('INSERT INTO matches VALUES(?,?,?,?,?,?,?,?,?)',
+    c.execute('INSERT INTO matches VALUES(?,?,?,?,?,?,?,?,?,?)',
               (__uniqueMatchId(match), match['tournament-id'],
+               match['updated-at'],
                player1['email-hash'], player2['email-hash'],
                winner['email-hash'],
                oldRatings[0], oldRatings[1],
@@ -253,6 +254,7 @@ def __createDatabase(dbName):
 
         "CREATE TABLE matches"
         "(id INT PRIMARY KEY, tournament_id INT,"
+        " date INT,"
         " player1_id TEXT, player2_id TEXT, winner_id TEXT,"
         " player1_elo INT, player2_elo INT,"
         " player1_elo_change INT, player2_elo_change INT,"
