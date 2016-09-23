@@ -67,19 +67,6 @@ def __addParticipation(db, tournament, player):
               (tournament['id'], player['email-hash']))
 
 
-def __uniqueMatchId(match):
-    """ Generate an unique id for a match.
-    Arguments:
-        match: match object as fetched from challonge API
-
-        Returns ID as an integer
-    """
-    k1 = match['tournament-id']
-    k2 = match['id']
-    id = ((k1 + k2) * (k1 + k2 + 1)) / 2 + k2
-    return id
-
-
 def __addMatch(db, match, oldRatings, newRatings):
     """Inserts a match record into the database.
     Arguments:
@@ -98,7 +85,7 @@ def __addMatch(db, match, oldRatings, newRatings):
     winner = __playerCache[match['winner-id']]
 
     c.execute('INSERT INTO matches VALUES(?,?,?,?,?,?,?,?,?,?)',
-              (__uniqueMatchId(match), match['tournament-id'],
+              (match['id'], match['tournament-id'],
                match['updated-at'],
                player1['email-hash'], player2['email-hash'],
                winner['email-hash'],
@@ -253,13 +240,14 @@ def __createDatabase(dbName):
         " ON DELETE CASCADE)",
 
         "CREATE TABLE matches"
-        "(id INT PRIMARY KEY, tournament_id INT,"
+        "(id INT NOT NULL, tournament_id INT NOT NULL,"
         " date INT,"
         " player1_id TEXT, player2_id TEXT, winner_id TEXT,"
         " player1_elo INT, player2_elo INT,"
         " player1_elo_change INT, player2_elo_change INT,"
         " FOREIGN KEY(tournament_id) REFERENCES tournaments(id)"
         "  ON DELETE CASCADE,"
+        " PRIMARY KEY(id, tournament_id),"
         " FOREIGN KEY(player1_id) REFERENCES players(id),"
         " FOREIGN KEY(player2_id) REFERENCES players(id))"
 
