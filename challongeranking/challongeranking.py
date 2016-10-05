@@ -1,6 +1,4 @@
 import challonge
-import os.path
-import sqlite3
 
 # The rating that previously unrated players start at
 _newPlayerRating = 1200
@@ -10,7 +8,7 @@ def setCredentials(username, apikey):
     challonge.set_credentials(username, apikey)
 
 
-def processTournament(tournamentName, dbName):
+def processTournament(tournamentName, dbConnection):
     """Calculate new ratings for a single tournament.
 
     Goes through all matches of a tournament and calculates changes in
@@ -24,18 +22,14 @@ def processTournament(tournamentName, dbName):
             of form 'subdomain-tournament' (e.g. myorganisation-mytournament
             for 'myorganisation.challonge.com/mytournament')
 
-        dbName:
-            database filename.
-            If the file doesn't exist, it will be created.
+        dbConnection:
+            DB-API connection object
     """
     global __playerCache, __ratingCache
     __playerCache = dict()
     __ratingCache = dict()
 
-    if not os.path.exists(dbName):
-        db = __createDatabase(dbName)
-    else:
-        db = sqlite3.connect(dbName)
+    db = dbConnection
 
     # Do not process tournaments that have already been processed
     tournament = challonge.tournaments.show(tournamentName)
@@ -45,6 +39,8 @@ def processTournament(tournamentName, dbName):
     # Do not process tournaments that have not been completed yet
     if tournament['completed-at'] == None:
         return
+
+    __addTournament(tournament['id'], db)
 
     players = filter(lambda player: player['email-hash'] is not None,
                      challonge.participants.index(tournament['id']))
@@ -56,15 +52,13 @@ def processTournament(tournamentName, dbName):
     for match in challonge.matches.index(tournament['id']):
         __processMatch(match, db)
 
-    __addTournament(tournament['id'], db)
     db.commit()
-    db.close()
 
 
 def __addParticipation(db, tournament, player):
     c = db.cursor()
-    c.execute('INSERT INTO participations VALUES (?,?)',
-              (tournament['id'], player['email-hash']))
+    c.execute("INSERT INTO participations VALUES ('%s',%s)" %
+              (player['email-hash'], tournament['id']))
 
 
 def __addMatch(db, match, oldRatings, newRatings):
@@ -84,7 +78,8 @@ def __addMatch(db, match, oldRatings, newRatings):
     player2 = __playerCache[match['player2-id']]
     winner = __playerCache[match['winner-id']]
 
-    c.execute('INSERT INTO matches VALUES(?,?,?,?,?,?,?,?,?,?)',
+    c.execute("INSERT INTO matches "
+              "VALUES(%s,%s,'%s','%s','%s','%s',%s,%s,%s,%s)" %
               (match['id'], match['tournament-id'],
                match['updated-at'],
                player1['email-hash'], player2['email-hash'],
@@ -114,9 +109,9 @@ def __processMatch(match, db):
     player1NewRating, player2NewRating = __updateRatings((player1Rating,
                                                          player2Rating),
                                                          winner)
-    c.execute('UPDATE players SET rating=? WHERE id=?',
+    c.execute("UPDATE players SET rating=%s WHERE id='%s'" %
               (player1NewRating, player1['email-hash']))
-    c.execute('UPDATE players SET rating=? WHERE id=?',
+    c.execute("UPDATE players SET rating=%s WHERE id='%s'" %
               (player2NewRating, player2['email-hash']))
 
     __ratingCache[player1['id']] = player1NewRating
@@ -135,8 +130,8 @@ def __playerRating(player, db):
     key = player['id']
     if key not in __ratingCache:
         c = db.cursor()
-        c.execute('SELECT rating FROM PLAYERS WHERE id=?',
-                  (player['email-hash'],))
+        c.execute("SELECT rating FROM PLAYERS WHERE id='%s'" %
+                  player['email-hash'])
         rating = c.fetchone()[0]
         __ratingCache[key] = rating
     else:
@@ -147,13 +142,12 @@ def __playerRating(player, db):
 
 def __addTournament(tournamentId, db):
     c = db.cursor()
-    c.execute('INSERT INTO tournaments VALUES(?)', (tournamentId,))
+    c.execute("INSERT INTO tournaments VALUES(%s)" % tournamentId)
 
 
 def __findTournament(tournamentId, db):
     c = db.cursor()
-    c.execute('SELECT id FROM tournaments WHERE id=?', (tournamentId,))
-
+    c.execute("SELECT id FROM tournaments WHERE id=%s" % tournamentId)
     return c.fetchone() is not None
 
 
@@ -201,30 +195,30 @@ def __updatePlayerName(db, player):
     else:
         playerTournamentName = player['challonge-username']
 
-    c.execute('SELECT id FROM players WHERE id=?', (id,))
+    c.execute("SELECT id FROM players WHERE id='%s'" % id)
     row = c.fetchone()
     if row is None:
         newPlayerRecord = (player['email-hash'],
                            playerTournamentName,
                            _newPlayerRating)
-        c.execute('INSERT INTO players VALUES(?,?,?)', newPlayerRecord)
+        c.execute("INSERT INTO players VALUES('%s','%s',%s)" % newPlayerRecord)
     else:
-        c.execute('SELECT nick FROM players WHERE id=?', (id,))
+        c.execute("SELECT nick FROM players WHERE id='%s'" % id)
         storedName = c.fetchone()[0]
         if storedName != playerTournamentName:
-            c.execute('SELECT alias FROM aliases WHERE player_id=?', (id,))
+            c.execute("SELECT alias FROM aliases WHERE player_id='%s'" % id)
             if c.fetchone() is None:
-                c.execute('INSERT INTO aliases VALUES(?,?)',
+                c.execute("INSERT INTO aliases VALUES('%s','%s')" %
                           (playerTournamentName, id))
 
 
-def __createDatabase(dbName):
-    """Sets up a fresh sqlite3 database with the filename dbName.
-    Returns a connection to the created database.
+def createDatabase(dbConnection):
+    """Create fresh database.
+    Args:
+        dbConnection - DB-API compatible connection object
     """
 
-    newdb = sqlite3.connect(dbName)
-    c = newdb.cursor()
+    c = dbConnection.cursor()
 
     queries = [
         "CREATE TABLE players(id TEXT PRIMARY KEY, nick TEXT, rating INT)",
@@ -234,14 +228,14 @@ def __createDatabase(dbName):
 
         "CREATE TABLE tournaments(id INT PRIMARY KEY)",
 
-        "CREATE TABLE participations(player_id INT, tournament_id INT,"
+        "CREATE TABLE participations(player_id TEXT, tournament_id INT,"
         " FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE,"
         " FOREIGN KEY(tournament_id) REFERENCES tournaments(id)"
         " ON DELETE CASCADE)",
 
         "CREATE TABLE matches"
         "(id INT NOT NULL, tournament_id INT NOT NULL,"
-        " date INT,"
+        " date TIMESTAMP,"
         " player1_id TEXT, player2_id TEXT, winner_id TEXT,"
         " player1_elo INT, player2_elo INT,"
         " player1_elo_change INT, player2_elo_change INT,"
@@ -254,6 +248,5 @@ def __createDatabase(dbName):
     ]
     for query in queries:
         c.execute(query)
-        newdb.commit()
 
-    return newdb
+    dbConnection.commit()
