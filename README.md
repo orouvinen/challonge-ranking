@@ -17,5 +17,6 @@ To import, use `from challongeranking import challongeranking`.
 Please see the examples directory for example code.
 
 ## Using the stored data
-challongeranking stores ratings in a **sqlite3 database**.
-Please see [README-database](README-database.md) for details.
+challongeranking stores ratings in a SQL database (or any other store
+that provides the Python DB-API interface (described in [PEP 249](https://www.python.org/dev/peps/pep-0249/)).
+See [README-database](README-database.md) for details.
