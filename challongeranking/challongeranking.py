@@ -49,7 +49,10 @@ def processTournament(tournamentName, dbConnection):
         __updatePlayerName(db, player)
         __addParticipation(db, tournament, player)
 
-    for match in challonge.matches.index(tournament['id']):
+    # Process the matches in the order they were completed
+    matches = challonge.matches.index(tournament['id'])
+    sortedMatches = sorted(matches, key=lambda match: match['updated-at'])
+    for match in sortedMatches:
         __processMatch(match, db)
 
     db.commit()
