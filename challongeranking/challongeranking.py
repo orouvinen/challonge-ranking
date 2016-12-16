@@ -40,14 +40,35 @@ def processTournament(tournamentName, dbConnection):
     if tournament['completed-at'] == None:
         return
 
-    __addTournament(tournament['id'], db)
+    __addTournament(tournament, db)
 
+    # Filter out players who have played under registered account and
+    # can thus be identified
     players = filter(lambda player: player['email-hash'] is not None,
                      challonge.participants.index(tournament['id']))
+
+    # Process tournament players
     for player in players:
         __playerCache[player['id']] = player
         __updatePlayerName(db, player)
         __addParticipation(db, tournament, player)
+
+    # Find tournament's winner
+    highestRankPlayer = players[0]
+    for player in players:
+        # Find the highest ranking player.
+        # This is *usually* the tournament winner with final_rank 1
+        # (but see the comment below)
+        if (player['final-rank'] < highestRankPlayer['final-rank'] and
+           player['final-rank'] is not None):
+            highestRankPlayer = player
+
+    # It might be so that the tournament winner hadn't registered on Challonge,
+    # in which case the highest ranking player is not the actual winner.
+    # Tournament record is created with NULL value for the winner, which we'll
+    # just leave there if there is no player with final rank 1.
+    if highestRankPlayer['final-rank'] == 1:
+        __setTournamentWinner(tournament, highestRankPlayer, db)
 
     # Process the matches in the order they were completed
     matches = challonge.matches.index(tournament['id'])
@@ -143,14 +164,21 @@ def __playerRating(player, db):
     return rating
 
 
-def __addTournament(tournamentId, db):
+def __addTournament(tournament, db):
     c = db.cursor()
-    c.execute("INSERT INTO tournaments VALUES(%s)" % tournamentId)
+    c.execute("INSERT INTO tournaments VALUES('%s','%s', NULL)" %
+              (tournament['id'], tournament['name']))
+
+
+def __setTournamentWinner(tournament, winner, db):
+    c = db.cursor()
+    c.execute("UPDATE tournaments SET winner='%s' WHERE id='%s'" %
+              (winner['email-hash'], tournament['id']))
 
 
 def __findTournament(tournamentId, db):
     c = db.cursor()
-    c.execute("SELECT id FROM tournaments WHERE id=%s" % tournamentId)
+    c.execute("SELECT id FROM tournaments WHERE id='%s'" % tournamentId)
     return c.fetchone() is not None
 
 
@@ -204,7 +232,8 @@ def __updatePlayerName(db, player):
         newPlayerRecord = (player['email-hash'],
                            playerTournamentName,
                            _newPlayerRating)
-        c.execute("INSERT INTO players VALUES('%s','%s',%s)" % newPlayerRecord)
+        c.execute("INSERT INTO players VALUES('%s','%s','%s')" %
+                  newPlayerRecord)
     else:
         c.execute("SELECT nick FROM players WHERE id='%s'" % id)
         storedName = c.fetchone()[0]
@@ -229,7 +258,11 @@ def createDatabase(dbConnection):
         "CREATE TABLE aliases(alias TEXT, player_id TEXT,"
         " FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE)",
 
-        "CREATE TABLE tournaments(id INT PRIMARY KEY)",
+        "CREATE TABLE tournaments(id INT NOT NULL,"
+        " name TEXT,"
+        " winner TEXT,"
+        " PRIMARY KEY(id),"
+        " FOREIGN KEY(winner) REFERENCES players(id))",
 
         "CREATE TABLE participations(player_id TEXT, tournament_id INT,"
         " FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE,"

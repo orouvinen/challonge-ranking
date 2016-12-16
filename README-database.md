@@ -18,7 +18,9 @@ Contains record of all the tournaments that have been processed so far.
 
 | Column |
 | ------ |
-| id |
+| id | Challonge id for tournament
+| name | Name of tournament as string |
+| winner | foreign key (players.id) |
 
 #### Table PARTICIPATIONS
 Keeps track of player participation in tournaments. Each row tells a
