@@ -16,9 +16,9 @@ The table provides mapping from player's possible aliases to the player.
 #### Table TOURNAMENTS
 Contains record of all the tournaments that have been processed so far.
 
-| Column |
-| ------ |
-| id | Challonge id for tournament
+| Column | Description |
+| ------ |:-----------:|
+| id | Challonge id for tournament |
 | name | Name of tournament as string |
 | winner | foreign key (players.id) |
 
