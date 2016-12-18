@@ -38,7 +38,7 @@ Match and Elo history for players.
 
 | Column | Description | Notes |
 | ------ |:-----------:| ----- |
-| id     | match unique id | Formed by prefixing tournament ID with match ID |
+| id     | match unique id | Composite key (match_id & tournament_id) |
 | tournament_id | foreign key (tournaments.id) |
 | date | match date | Date of match update (time of score report?) |
 | player1_id | foreign key (players.id) |
